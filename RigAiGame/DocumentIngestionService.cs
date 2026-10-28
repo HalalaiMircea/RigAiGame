@@ -13,8 +13,7 @@ public class DocumentIngestionService
         VectorStore vectorStore)
     {
         _vectorStore = vectorStore;
-        // Define a clean target limit for Qwen (512 tokens is optimal)
-        _semanticChunker = new SemanticChunker(embeddingGenerator, tokenLimit: 512);
+        _semanticChunker = new SemanticChunker(embeddingGenerator, tokenLimit: 512, bufferSize: 2, thresholdAmount: 92);
     }
 
     public async Task ProcessDirectoryAsync(string folderPath)
@@ -45,6 +44,7 @@ public class DocumentIngestionService
 
             // 3. Let the Semantic Chunker dynamically slice it based on context
             //TODO: Improve the chunking??? In SQLite table i can see some anomalies like just a 5. text chunk... instead of the whole bullet point
+            // URLs are chopped at the ? query symbol, the chunker thinks it's a question
             IList<Chunk> semanticChunks = await _semanticChunker.CreateChunksAsync(rawContent);
 
             Console.WriteLine($"Processed {Path.GetFileName(filePath)} into {semanticChunks.Count} semantic chunks.");

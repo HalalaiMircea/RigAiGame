@@ -48,7 +48,7 @@ while (true)
 {
     string question = AnsiConsole.Prompt(new TextPrompt<string>(cliPrompt).PromptStyle(userPromptStyle));
 
-    //TODO: Move to automatic embedding...
+    //TODO: Move to automatic embedding... and improve chunks, it truncates the sources for some questions
     var searchResults = collection.SearchAsync((await ollamaEmbeddingGenerator.GenerateAsync(question)).Vector, top: 3);
     var contextSB = new StringBuilder();
     await foreach (var result in searchResults)
@@ -69,5 +69,4 @@ while (true)
     cliPrompt = ">>";
 }
 
-//TODO: Setup the SQLite vector store + embedding generation and do the doc ingestion. Need to do chunking???
 //TODO: When searching for retrieval, use the same embeddingGenerator automatically
