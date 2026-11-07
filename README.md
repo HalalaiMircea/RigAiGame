@@ -4,7 +4,7 @@ This is a project i made for learning how a RAG pipeline is made. It's premise i
 search issues and fixes i dealt with in the past on my gaming PC. I already had lots of text and markdown (.md) files
 around in a folder that i added to over the years. I just needed to search them more efficiently.
 
-I tried to find a name that would reflect the purpose and be an acronym for RAG.
+I tried to find a name that would reflect the purpose and be an acronym for RAG but it's a bit of a stretch.
 
 ## Architecture
 
@@ -16,6 +16,7 @@ Tech Stack:
 * Ollama - for managing the local AI models (qwen3.5 and qwen-embedding)
 * OllamaSharp - the best C# client for Ollama
 * .NET Semantic Kernel ecosystem - provides abstractions for vector Databases & semantic text chunking
+* SQLite - for storing the embeddings and metadata
 * Spectre.Console/TUI - A console-based frontend for the user prompts
 
 ![rag_pipeline.png](rag_pipeline.png)

@@ -11,7 +11,7 @@
     <PackageReference Include="CommunityToolkit.VectorData.SqliteVec" Version="1.0.3-preview" />
     <PackageReference Include="OllamaSharp" Version="5.5.0" />
     <PackageReference Include="SemanticChunker.NET" Version="1.5.0" />
-    <PackageReference Include="Spectre.Console" Version="0.57.2" />
+    <PackageReference Include="Terminal.Gui" Version="2.5.0" />
   </ItemGroup>
 
 </Project>
