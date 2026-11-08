@@ -9,6 +9,7 @@
   
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.VectorData.SqliteVec" Version="1.0.3-preview" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.14" />
     <PackageReference Include="OllamaSharp" Version="5.5.0" />
     <PackageReference Include="SemanticChunker.NET" Version="1.5.0" />
     <PackageReference Include="Terminal.Gui" Version="2.5.0" />

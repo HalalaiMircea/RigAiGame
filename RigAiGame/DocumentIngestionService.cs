@@ -16,7 +16,7 @@ public class DocumentIngestionService
         _semanticChunker = new SemanticChunker(embeddingGenerator, tokenLimit: 512, bufferSize: 2, thresholdAmount: 92);
     }
 
-    public async Task ProcessDirectoryAsync(string folderPath)
+    public async Task ProcessDirectoryAsync(string folderPath, Action<string>? statusCallback = null)
     {
         // 1. Grab both .txt and .md files
         var allowedExtensions = new[] {".txt", ".md"};
@@ -47,7 +47,7 @@ public class DocumentIngestionService
             // URLs are chopped at the ? query symbol, the chunker thinks it's a question
             IList<Chunk> semanticChunks = await _semanticChunker.CreateChunksAsync(rawContent);
 
-            Console.WriteLine($"Processed {Path.GetFileName(filePath)} into {semanticChunks.Count} semantic chunks.");
+            statusCallback($"Processed {Path.GetFileName(filePath)} into {semanticChunks.Count} semantic chunks.");
 
             // Map to your MEVD POCOs and save to SQLite here...
             var mappedChunks = semanticChunks.Select((chunk, index) => new DocumentChunk
