@@ -32,9 +32,9 @@ internal sealed class MainWindow : Runnable
         _embeddingGenerator = embeddingGenerator;
 
         var menuBar = new MenuBar([
-            new MenuItem("_Sync Database", "", ResyncVectorStore),
-            new MenuItem("_About...", "", ShowAboutDialog),
-            new MenuItem("_Quit", "", QuitApp),
+            new MenuItem("_1 Sync Database", "", ResyncVectorStore),
+            new MenuItem("_2 About...", "", () => App!.Run<AboutWindow>()),
+            new MenuItem("_3 Quit", "", QuitApp),
         ]);
         _userPromptField = new TextView
         {
@@ -66,7 +66,7 @@ internal sealed class MainWindow : Runnable
 
         _newChatWelcome = new Label
         {
-            Text = "Welcome, gamer. How can I help today?",
+            Text = "Greetings! How can I help?",
             X = Pos.Center(),
             Y = Pos.Center(),
         };
@@ -74,8 +74,8 @@ internal sealed class MainWindow : Runnable
             X = Pos.X(_userPromptField),
             Y = Pos.Y(_userPromptField),
             AutoSpin = true,
-            SpinDelay = 80,
             Visible = false,
+            Style = new SpinnerStyle.OrangeBluePulse()
         };
         _statusLabel = new Label {
             Text = "Thinking...",
@@ -84,7 +84,11 @@ internal sealed class MainWindow : Runnable
             Visible = false
         };
 
-        _sendButton.Accepted += async (_, _) => await OnSendUserPrompt();
+        _sendButton.Accepted += async (_, e) =>
+        {
+            e.Handled = true;
+            await OnSendUserPrompt();
+        };
         _userPromptField.KeyDown += async (_, key) =>
         {
             if (key == Key.Enter.WithCtrl)
@@ -115,20 +119,20 @@ internal sealed class MainWindow : Runnable
 
     private async void ResyncVectorStore()
     {
-        int? btnIndex = MessageBox.Query(App!, "Confirm database resync",
-            "Are you sure you want to re-sync the document database? It may take a while...", "Yes", "Cancel");
-        if (btnIndex != 0)
-            return;
         string originalStatusText = _statusLabel.Text;
         try
         {
+            int? btnIndex = MessageBox.Query(App!, "Confirm database resync",
+                "Re-sync the document database? This may take a few moments...", "Yes", "Cancel");
+            if (btnIndex != 0)
+                return;
             SetWaitForResponse(true);
             // For now it's hardcoded, should add settings to the app...
             await _docIngestionService.ProcessDirectoryAsync("E:\\My Encyclopedia",
                 info => { _statusLabel.Text = info; });
         } catch (Exception e)
         {
-            MessageBox.ErrorQuery(App!, "Error", $"Could not re-sync the document database: {e.Message}", "Ok");
+            MessageBox.ErrorQuery(App!, "Error", $"Could not re-sync the document database. Reason:\n{e.Message}", "Ok");
         } finally
         {
             SetWaitForResponse(false);
@@ -141,7 +145,7 @@ internal sealed class MainWindow : Runnable
         string question = _userPromptField.Text.Trim().Replace("\n", "<br>");
         if (question.Length > 0)
         {
-            _mdArea.Text += $"{question}\n\n";
+            _mdArea.Text += $"> {question}\n\n";
             _userPromptField.Text = string.Empty;
             _newChatWelcome.Visible = false;
             
@@ -149,22 +153,31 @@ internal sealed class MainWindow : Runnable
             SetWaitForResponse(true);
             try
             {
-                var searchResults = _docCollection.SearchAsync((await _embeddingGenerator.GenerateAsync(question)).Vector, top: 3);
+                var uniqueFileNames = new HashSet<string>();
+                var searchResults =
+                    _docCollection.SearchAsync((await _embeddingGenerator.GenerateAsync(question)).Vector, top: 3);
                 var contextSB = new StringBuilder();
                 await foreach (var result in searchResults)
                 {
                     contextSB.AppendLine($"Source: {result.Record.FileName}\n{result.Record.Text}");
                     contextSB.AppendLine();
+                    uniqueFileNames.Add(result.Record.FileName);
                 }
                 //TODO: maybe rewrite the follow-up questions using the LLM, and send that to embedding model??
-                var prompt = $"## Context:\n{contextSB}\n\n## Question:\n{question}";
+                var prompt = $"## Context:\n{contextSB}\n## Question:\n{question}";
 
-                await foreach (var token in _chat.SendAsync(prompt))
+                await foreach (string token in _chat.SendAsync(prompt))
                 {
                     _mdArea.Text += token;
                 }
+                _mdArea.Text += $"\n\nSource(s): {string.Join(", ", uniqueFileNames)}";
                 _mdArea.Text += "\n\n";
-            } finally
+            }
+            catch (Exception ex)
+            {
+                MessageBox.ErrorQuery(App!, "Error", $"Failed to get response. Reason:\n{ex.Message}", "Ok");
+            }
+            finally
             {
                 SetWaitForResponse(false);
             }
@@ -175,30 +188,5 @@ internal sealed class MainWindow : Runnable
     {
         _userPromptField.Enabled = _sendButton.Enabled = !isWait;
         _loadingSpinner.Visible = _statusLabel.Visible = isWait;
-    }
-
-    private void ShowAboutDialog()
-    {
-        MessageBox.Query(App!, "About",
-            /*"""
-            ░       ░░░        ░░░      ░░░░░░░░░░      ░░░        ░░░░░░░░░      ░░░░      ░░░  ░░░░  ░░        ░
-            ▒  ▒▒▒▒  ▒▒▒▒▒  ▒▒▒▒▒  ▒▒▒▒▒▒▒▒▒▒▒▒▒▒  ▒▒▒▒  ▒▒▒▒▒  ▒▒▒▒▒▒▒▒▒▒▒  ▒▒▒▒▒▒▒▒  ▒▒▒▒  ▒▒   ▒▒   ▒▒  ▒▒▒▒▒▒▒
-            ▓       ▓▓▓▓▓▓  ▓▓▓▓▓  ▓▓▓   ▓▓▓▓▓▓▓▓  ▓▓▓▓  ▓▓▓▓▓  ▓▓▓▓▓▓▓▓▓▓▓  ▓▓▓   ▓▓  ▓▓▓▓  ▓▓        ▓▓      ▓▓▓
-            █  ███  ██████  █████  ████  ████████        █████  ███████████  ████  ██        ██  █  █  ██  ███████
-            █  ████  ██        ███      █████████  ████  ██        █████████      ███  ████  ██  ████  ██        █
-            """*/
-            """
-            ██████╗ ██╗ ██████╗      █████╗ ██╗     ██████╗  █████╗ ███╗   ███╗███████╗
-            ██╔══██╗██║██╔════╝     ██╔══██╗██║    ██╔════╝ ██╔══██╗████╗ ████║██╔════╝
-            ██████╔╝██║██║  ███╗    ███████║██║    ██║  ███╗███████║██╔████╔██║█████╗  
-            ██╔══██╗██║██║   ██║    ██╔══██║██║    ██║   ██║██╔══██║██║╚██╔╝██║██╔══╝  
-            ██║  ██║██║╚██████╔╝    ██║  ██║██║    ╚██████╔╝██║  ██║██║ ╚═╝ ██║███████╗
-            ╚═╝  ╚═╝╚═╝ ╚═════╝     ╚═╝  ╚═╝╚═╝     ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝
-            """ +
-            "\nYour personal AI powered search over your own documents." +
-            "\nYou own it, nothing goes to the cloud. You just need a GPU 😉" +
-            "\nCreated using Terminal.Gui (tui-cs) v2!" +
-            "\nVersion 1.0.0",
-            "OK");
     }
 }

@@ -6,13 +6,13 @@ namespace RigAiGame;
 
 public class DocumentIngestionService
 {
-    private readonly VectorStore _vectorStore;
+    private readonly VectorStoreCollection<string, DocumentChunk> _documentsStore;
     private readonly SemanticChunker _semanticChunker;
 
     public DocumentIngestionService(IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator,
-        VectorStore vectorStore)
+        VectorStoreCollection<string, DocumentChunk> documentsStore)
     {
-        _vectorStore = vectorStore;
+        _documentsStore = documentsStore;
         _semanticChunker = new SemanticChunker(embeddingGenerator, tokenLimit: 512, bufferSize: 2, thresholdAmount: 92);
     }
 
@@ -23,11 +23,10 @@ public class DocumentIngestionService
         var files = Directory.GetFiles(folderPath, "*.*", SearchOption.TopDirectoryOnly)
             .Where(f => allowedExtensions.Contains(Path.GetExtension(f).ToLower()));
 
-        var collection = _vectorStore.GetCollection<string, DocumentChunk>("documents");
         //TODO TEMP: just regenerating it every time...we will do proper updating later
-        await collection.EnsureCollectionDeletedAsync();
+        await _documentsStore.EnsureCollectionDeletedAsync();
         //
-        await collection.EnsureCollectionExistsAsync();
+        await _documentsStore.EnsureCollectionExistsAsync();
 
         foreach (var filePath in files)
         {
@@ -59,7 +58,7 @@ public class DocumentIngestionService
                 TextEmbedding = chunk.Embedding.Vector
             });
 
-            await collection.UpsertAsync(mappedChunks);
+            await _documentsStore.UpsertAsync(mappedChunks);
         }
     }
 }
