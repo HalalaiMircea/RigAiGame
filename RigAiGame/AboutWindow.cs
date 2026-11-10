@@ -1,5 +1,6 @@
 using Terminal.Gui.Configuration;
 using Terminal.Gui.Drawing;
+using Terminal.Gui.Resources;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 using Attribute = Terminal.Gui.Drawing.Attribute;
@@ -53,7 +54,7 @@ public class AboutWindow : Window
 
         var okBtn = new Button
         {
-            Text = "OK",
+            Text = Strings.btnOk,
             X = Pos.Center(),
             Y = Pos.Bottom(infoLabel) + 1,
         };

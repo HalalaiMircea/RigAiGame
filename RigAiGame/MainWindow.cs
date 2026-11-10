@@ -3,6 +3,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.VectorData;
 using OllamaSharp;
 using Terminal.Gui.Input;
+using Terminal.Gui.Resources;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 
@@ -47,21 +48,22 @@ internal sealed class MainWindow : Runnable
         _sendButton = new Button
         {
             X = Pos.AnchorEnd(),
-            Y = Pos.Top(_userPromptField),
-            Width = Dim.Auto(),
-            Height = Dim.Fill() + 1,
-            Text = "Send",
+            Y = Pos.AnchorEnd() + 1,
+            Width = 6,
+            Height = Dim.Height(_userPromptField) + 1,
+            Text = "→",
             ShadowStyle = ShadowStyles.None,
-            NoPadding = true,
         };
-        _userPromptField.Width = Dim.Fill(to: _sendButton, margin: 1);
+        // Jank cross-dependency so the framework bugs out layouts after resizes, so we do this hardcode PoS to fix it
+        _userPromptField.Width = Dim.Fill() - _sendButton.Width - 2;
+        var line = new Line { X = 0, Y = Pos.Y(_userPromptField) - 1 };
 
         _mdArea = new Markdown
         {
             X = 0,
-            Y = 1,
+            Y = Pos.Bottom(menuBar),
             Width = Dim.Fill(),
-            Height = Dim.Fill(to: _userPromptField),
+            Height = Dim.Fill(to: line),
         };
 
         _newChatWelcome = new Label
@@ -103,14 +105,14 @@ internal sealed class MainWindow : Runnable
             }
         };
 
-        Add(_mdArea, menuBar, _userPromptField, _sendButton, _newChatWelcome, _loadingSpinner, _statusLabel);
+        Add(_mdArea, menuBar, _userPromptField, line, _sendButton, _newChatWelcome, _loadingSpinner, _statusLabel);
 
         _userPromptField.SetFocus();
     }
 
     private void QuitApp()
     {
-        int? btnIndex = MessageBox.Query(App!, "Confirm Exit", "Are you sure you want to exit?", "Exit", "Cancel");
+        int? btnIndex = MessageBox.Query(App!, "Confirm Exit", "Are you sure you want to exit?", Strings.cmdQuit, Strings.btnCancel);
         if (btnIndex == 0)
         {
             App!.RequestStop();
@@ -123,7 +125,7 @@ internal sealed class MainWindow : Runnable
         try
         {
             int? btnIndex = MessageBox.Query(App!, "Confirm database resync",
-                "Re-sync the document database? This may take a few moments...", "Yes", "Cancel");
+                "Re-sync the document database? This may take a few moments...", Strings.btnYes, Strings.btnCancel);
             if (btnIndex != 0)
                 return;
             SetWaitForResponse(true);
@@ -132,7 +134,7 @@ internal sealed class MainWindow : Runnable
                 info => { _statusLabel.Text = info; });
         } catch (Exception e)
         {
-            MessageBox.ErrorQuery(App!, "Error", $"Could not re-sync the document database. Reason:\n{e.Message}", "Ok");
+            MessageBox.ErrorQuery(App!, "Error", $"Could not re-sync the document database. Reason:\n{e.Message}", Strings.btnOk);
         } finally
         {
             SetWaitForResponse(false);
@@ -175,7 +177,7 @@ internal sealed class MainWindow : Runnable
             }
             catch (Exception ex)
             {
-                MessageBox.ErrorQuery(App!, "Error", $"Failed to get response. Reason:\n{ex.Message}", "Ok");
+                MessageBox.ErrorQuery(App!, "Error", $"Failed to get response. Reason:\n{ex.Message}", Strings.btnOk);
             }
             finally
             {
